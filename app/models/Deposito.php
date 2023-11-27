@@ -80,7 +80,7 @@ class Deposito
     public static function consultaMovimientosC($fechaInicio, $fechaFin)
     {
         $objAccesoDatos = AccesoDatos::obtenerInstancia();
-        $consulta = $objAccesoDatos->prepararConsulta("SELECT * FROM depositos WHERE fecha BETWEEN fechaInicio = :fechaInicio AND fechaFin = :fechaFin ORDER BY nombre AND estaActivo = true");
+        $consulta = $objAccesoDatos->prepararConsulta("SELECT * FROM depositos WHERE fecha BETWEEN :fechaInicio AND :fechaFin AND estaActivo = true ORDER BY nombre");
         $consulta->bindValue(':fechaInicio', $fechaInicio, PDO::PARAM_STR);
         $consulta->bindValue(':fechaFin', $fechaFin, PDO::PARAM_STR);
         $consulta->execute();
@@ -101,183 +101,36 @@ class Deposito
     public static function consultaMovimientosE($moneda)
     {
         $objAccesoDatos = AccesoDatos::obtenerInstancia();
-        $consulta = $objAccesoDatos->prepararConsulta("SELECT * FROM depositos WHERE tipoDeCuenta LIKE %letra% = :letra AND estaActivo = true");
+        $consulta = $objAccesoDatos->prepararConsulta("SELECT * FROM depositos WHERE SUBSTRING(tipoDeCuenta, CHAR_LENGTH(tipoDeCuenta), 1) = :letra AND estaActivo = true");
         $consulta->bindValue(':letra', $moneda, PDO::PARAM_STR);
         $consulta->execute();
 
         return $consulta->fetchAll(PDO::FETCH_CLASS, 'Deposito');
     }
 
-    /*
-    //JSON
-    public static function CompararNombre($deposito1, $deposito2)
+    public function ModificarDeposito()
     {
-        return strcmp($deposito1->_nombre, $deposito2->_nombre);
+        $objAccesoDato = AccesoDatos::obtenerInstancia();
+        $consulta = $objAccesoDato->prepararConsulta("UPDATE depositos SET nombre = :nombre, apellido = :apellido, tipoDocumento = :tipoDocumento, numeroDocumento = :numeroDocumento, email = :email WHERE nroDeCuenta = :nroDeCuenta AND tipoDeCuenta = :tipoDeCuenta");
+        $consulta->bindValue(':tipoDeCuenta', $this->tipoDeCuenta, PDO::PARAM_STR);
+        $consulta->bindValue(':nroDeCuenta', $this->nroDeCuenta, PDO::PARAM_INT);
+        $consulta->bindValue(':nombre', $this->nombre, PDO::PARAM_STR);
+        $consulta->bindValue(':apellido', $this->apellido, PDO::PARAM_STR);
+        $consulta->bindValue(':tipoDocumento', $this->tipoDocumento, PDO::PARAM_STR);
+        $consulta->bindValue(':numeroDocumento', $this->numeroDocumento, PDO::PARAM_INT);
+        $consulta->bindValue(':email', $this->email, PDO::PARAM_STR);
+        $consulta->execute();
     }
 
-    public static function GenerarIdAutoIncrementalDeposito()
+    public function EliminarDeposito()
     {
-        $nroDeDeposito = 2000;
-
-        if(file_exists("nroDeDeposito.txt"))
-        {
-            $nroDeDeposito = file_get_contents("nroDeDeposito.txt");           
-        }
-
-        $nroDeDeposito++;
-
-        file_put_contents("nroDeDeposito.txt", $nroDeDeposito);
-
-        return $nroDeDeposito;
+        $objAccesoDato = AccesoDatos::obtenerInstancia();
+        $consulta = $objAccesoDato->prepararConsulta("UPDATE depositos SET estaActivo = :estaActivo WHERE nroDeCuenta = :nroDeCuenta AND tipoDeCuenta = :tipoDeCuenta");
+        $consulta->bindValue(':estaActivo', $this->estaActivo, PDO::PARAM_BOOL);
+        $consulta->bindValue(':tipoDeCuenta', $this->tipoDeCuenta, PDO::PARAM_STR);
+        $consulta->bindValue(':nroDeCuenta', $this->nroDeCuenta, PDO::PARAM_INT);
+        $consulta->execute();
     }
 
-    public static function ObtenerDepositos()
-    {
-        $arrayDepositos = array();
-        $rutaArchivo = 'depositos.json';
-        
-        if(file_exists($rutaArchivo))
-        {
-            $data = file_get_contents($rutaArchivo); 
-            $arrayAsociativo = json_decode($data,true);
-            foreach($arrayAsociativo as $deposito)
-            {              
-                $nuevoDeposito = new Deposito($deposito["_nombre"], $deposito["_apellido"], $deposito["_tipoDocumento"], $deposito["_numeroDocumento"], $deposito["_email"], $deposito["_tipoDeCuenta"], $deposito["_moneda"], $deposito["_saldoInicial"], $deposito["_nroDeCuenta"], $deposito["_nroDeDeposito"], $deposito["_fecha"], $deposito["_monto"]);
-                $arrayDepositos[] = $nuevoDeposito;
-            }
-        }   
-        else 
-        {
-            file_put_contents($rutaArchivo, "[]");
-        }
-        return $arrayDepositos;
-    }
-
-    public static function GuardarDepositos($arrayDepositos)
-    {
-        $rutaArchivo = "depositos.json";
-        $archivoJson = json_encode($arrayDepositos,JSON_PRETTY_PRINT);
-        file_put_contents($rutaArchivo,$archivoJson);
-    }
-
-    public static function AgregarDeposito($nuevoDeposito)
-    {
-        $arrayDepositos = Deposito::ObtenerDepositos();
-        $arrayDepositos[] = $nuevoDeposito;
-        Deposito::GuardarDepositos($arrayDepositos);
-    }
-    //a
-    public static function TotalDepositado($TipoDeCuenta, $moneda, $fecha = null)
-    {
-        $montoTotal = 0;
-        if($fecha == null)
-        {
-            $fecha = New Datetime();
-            $fecha->sub(new DateInterval('P1D'));
-            $fecha->format('d-m-Y');
-        }
-        $arrayDepositos = Deposito::ObtenerDepositos();
-        foreach ($arrayDepositos as $deposito) 
-        {
-            if($deposito->_tipoDeCuenta == $TipoDeCuenta && $deposito->_moneda == $moneda && $deposito->_fecha == $fecha)
-            {
-                $montoTotal += $deposito->_monto;
-            }
-        }
-        return $montoTotal;
-    }
-    //b
-    public static function BuscarDepositoParticular($numeroDeCuenta)
-    {
-        $arrayDepositos = Deposito::ObtenerDepositos();
-        $arrayAux = [];
-        foreach ($arrayDepositos as $deposito) 
-        {
-            if($deposito->_nroDeCuenta == $numeroDeCuenta)
-            {
-                $arrayAux[] = $deposito;
-            }
-        }
-        return $arrayAux;
-    }
-    //c
-    public static function BuscarEntreFechas($fechaInicial, $fechaFinal)
-    {
-        $arrayDepositos = Deposito::ObtenerDepositos();
-        $arrayAux = [];
-        foreach ($arrayDepositos as $deposito) 
-        {
-            if($deposito->_fecha >= $fechaInicial && $deposito->_fecha <= $fechaFinal)
-            {
-                $arrayAux[] = $deposito;
-            }
-        }
-        usort($arrayAux, "Deposito::CompararNombre");
-        return $arrayAux;
-    }
-    //d
-    public static function BuscarPorTipoDeCuenta($TipoDeCuenta)
-    {
-        $arrayDepositos = Deposito::ObtenerDepositos();
-        $arrayAux = [];
-        foreach ($arrayDepositos as $deposito) 
-        {
-            if($deposito->_tipoDeCuenta == $TipoDeCuenta)
-            {
-                $arrayAux[] = $deposito;
-            }
-        }
-        return $arrayAux;
-    }
-    //e
-    public static function BuscarPorMoneda($moneda)
-    {
-        $arrayDepositos = Deposito::ObtenerDepositos();
-        $arrayAux = [];
-        foreach ($arrayDepositos as $deposito) 
-        {
-            if($deposito->_moneda == $moneda)
-            {
-                $arrayAux[] = $deposito;
-            }
-        }
-        return $arrayAux;
-    }
-
-    private function MostrarDeposito()
-    {
-        echo $this->_nombre."-";
-        echo $this->_apellido."-";
-        echo $this->_tipoDocumento."-";
-        echo $this->_numeroDocumento."-";
-        echo $this->_email."-";
-        echo $this->_tipoDeCuenta."-";
-        echo $this->_moneda."-";
-        echo $this->_saldoInicial."-";
-        echo $this->_nroDeCuenta."-";
-        echo $this->_nroDeDeposito."-";
-        echo $this->_fecha."-";
-        echo $this->_monto;
-        echo "</br>";
-    }
-
-    public static function MostrarArrayDepositos($arrayDepositos)
-    {
-        if($arrayDepositos != null)
-        {
-            echo "Nombre - Apellido - Tipo de documento - Numero de documento - Email - Tipo de cuenta - Tipo de moneda - Saldo inicial - Numero de cuenta - Numero de deposito - Fecha - Monto";
-            echo "</br>";
-            echo "</br>";
-            foreach ($arrayDepositos as $deposito) 
-            {
-                $deposito->MostrarDeposito();
-            }
-        }
-        else{
-            echo "No hay lista de Depositos </br>";
-        }
-
-    }
-
-    */
+    
 }
