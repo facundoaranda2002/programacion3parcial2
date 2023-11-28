@@ -1,6 +1,7 @@
 <?php
 require_once './models/Deposito.php';
 require_once './models/Cuenta.php';
+require_once './models/logtransacciones.php';
 
 class DepositoController extends Deposito 
 
@@ -39,7 +40,14 @@ class DepositoController extends Deposito
       {  
         $payload = json_encode(array("mensaje" => "Deposito creado con exito"));
         $cuenta->saldo += $deposito->monto;
-        $cuenta->modificarMontoCuenta();
+        $cuenta->ModificarMontoCuenta();
+        /*
+        $logtransacciones=new logtransacciones();
+        $logtransacciones->fecha = $deposito->fecha;
+        $logtransacciones->idUsuario = $deposito->nroDeCuenta;
+        $logtransacciones->nroTransaccion = $deposito->nroDeDeposito;
+        $logtransacciones->crearTransaccion();
+        */
       } 
       else 
       {

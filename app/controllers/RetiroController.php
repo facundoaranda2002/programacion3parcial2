@@ -1,6 +1,7 @@
 <?php
 require_once './models/Retiro.php';
 require_once './models/Cuenta.php';
+require_once './models/logtransacciones.php';
 
 class RetiroController extends Retiro
 {
@@ -36,7 +37,16 @@ class RetiroController extends Retiro
 
         $retiro->crearRetiro();
         $cuenta->saldo -= $retiro->monto;
-        $cuenta->modificarMontoCuenta();
+        $cuenta->ModificarMontoCuenta();
+
+        /*
+        $logtransacciones=new logtransacciones();
+        $logtransacciones->fecha = $retiro->fecha;
+        $logtransacciones->idUsuario = $retiro->nroDeCuenta;
+        $logtransacciones->nroTransaccion = $retiro->nroDeRetiro;
+        $logtransacciones->crearTransaccion();
+        */
+
         $payload = json_encode(array("mensaje" => "Retiro creado con exito"));
       }
       else

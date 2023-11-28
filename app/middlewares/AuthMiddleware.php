@@ -3,6 +3,7 @@
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 use Slim\Psr7\Response;
+require_once "./models/logaccesos.php";
 
 class AuthMiddleware
 {
@@ -13,6 +14,13 @@ class AuthMiddleware
 
         try {
             AutentificadorJWT::VerificarToken($token);
+            $data = AutentificadorJWT::ObtenerData($token);
+            $logacceso = new logaccesos();
+            $logacceso->idUsuario = $data->idUsuario;
+            $logacceso->nombreUsuario = $data->nombreUsuario;
+            $logacceso->rol = $data->rol;
+            $logacceso->password = $data->password;
+            $logacceso->crearAcceso();
             $response = $handler->handle($request);
         } catch (Exception $e) {
             $response = new Response();
